@@ -20,10 +20,12 @@ export class AuthService{
   private _authStatus = signal<AuthStatus>(AuthStatus.checking);
 
 
-  public currentUser = computed(() => this._currentUser);
-  public authStatus = computed(() => this._authStatus);
+  public currentUser = computed(() => this._currentUser());
+  public authStatus = computed(() => this._authStatus());
 
-  constructor(){}
+  constructor(){
+    this.checkAuthStatus().subscribe();
+  }
 
   login(email: string, password: string):Observable<boolean>{
 
@@ -37,7 +39,8 @@ export class AuthService{
         this._currentUser.set(user);
         this._authStatus.set(AuthStatus.authenticated);
         localStorage.setItem('token',token)
-        console.log({user,token})
+        console.log(localStorage.getItem('token'));
+        console.log('hi');
       }),
       map(()=>true),
 
@@ -50,9 +53,12 @@ export class AuthService{
 
   checkAuthStatus():Observable<boolean>{
     const url = `${this.baseUrl}/auth/check-token`;
-    const token = localStorage.getItem('token');
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2OTgzYzEyMWU2ZGM5MTk1YWI4OTVjYiIsImlhdCI6MTcyMTk0Mjc5MCwiZXhwIjoxNzIxOTY0MzkwfQ.jbMRteyDQpqpIjdru8AXJNJ8Gw06ZOvYNpJZDs2lD_I';
+    //const token = localStorage.getItem('token');
 
-    if(!token) return of(false);
+    if(!token){
+      this.logout();
+      return of(false)};
 
     const headers = new HttpHeaders()
     .set('Authorization',`Bearer ${token}`);
@@ -71,5 +77,11 @@ export class AuthService{
         return of(false)
       })
     )
+  }
+
+  logout(){
+    localStorage.removeItem('token');
+    this._currentUser.set(null);
+    this._authStatus.set(AuthStatus.noAuthenticated);
   }
 }
